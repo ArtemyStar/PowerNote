@@ -47,6 +47,8 @@ class NoteApp(App):
         self.scroll = ScrollView(size_hint=(1, 1))
 
         self.layout = GridLayout(cols=1, spacing=10, padding=10, size_hint_y=None)
+        self.layout.row_default_height = 100
+        self.layout.row_force_default = True
         self.layout.bind(minimum_height=self.layout.setter('height'))
         self.scroll.bind(width=self.recalculate)
         self.btn = Button(text='+', size_hint=(1, None), size=(100, 100))
