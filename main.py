@@ -49,7 +49,7 @@ class NoteApp(App):
         self.layout = GridLayout(cols=1, spacing=10, padding=10, size_hint_y=None)
         self.layout.bind(minimum_height=self.layout.setter('height'))
         self.scroll.bind(width=self.recalculate)
-        self.btn = Button(text='+')
+        self.btn = Button(text='+', size_hint=(1, None), size=(100, 100))
 
         for _ in range(15):
             self.layout.add_widget(Note('text'))
