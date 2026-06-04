@@ -3,47 +3,80 @@ from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
-from kivy.core.text import Label as CoreLabel
+from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.core.window import Window
 
 
 class Note(Widget):
-    def __init__(self, text, **kwargs): 
+    def __init__(self, text, **kwargs):
         super().__init__(**kwargs)
-
-        self.text_content = text
-        self.size_hint = (1, None)
+        self.size_hint = (None, None)
         self.size = (100, 100)
-        self.text_texture = None
+        self.label = Label(text=text, size=self.size, color=(0, 0, 0, 1))
+        self.add_widget(self.label)
+        self.bind(pos=self.draw, size=self.draw)
 
+    def draw(self, *args):
+        self.canvas.clear()
         with self.canvas:
             Color(1, 1, 1, 1)
-            self.rect = Rectangle(pos=self.pos, size=self.size)
-            Color(0, 0, 0, 1)
-            self.text_rect = Rectangle(pos=self.pos, size=(0, 0))
+            Rectangle(pos=self.pos, size=self.size)
+        self.label.pos = self.pos
 
-        self.bind(pos=self.update_rect, size=self.update_rect)
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            app = App.get_running_app()
+            app.edit_screen.open_note(self)
+            app.sm.current = 'edit'
+            return True
 
-    def update_rect(self, instance, *args):
-        self.rect.pos = self.pos
-        self.rect.size = self.size
-        dynamic_font_size = self.height * 0.25
-
-        core_label = CoreLabel(text=self.text_content, font_size=dynamic_font_size)
-        core_label.refresh()
-
-        self.text_texture = core_label.texture
-        self.text_rect.texture = self.text_texture
-        self.text_rect.size = self.text_texture.size
-
-        text_x = self.x + (self.width - self.text_texture.width) / 2
-        text_y = self.y + (self.height - self.text_texture.height) / 2
-
-        self.text_rect.pos = (text_x, text_y)
+        return super().on_touch_down(touch)
 
 
-class NoteApp(App):
-    def build(self):
+class EditScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        self.text_input = TextInput(size_hint=(1, 0.9), font_size=16)
+        layout.add_widget(self.text_input)
+
+        btn_back = Button(text='Save and exit', size_hint=(1, 0.1))
+        btn_back.bind(on_press=self.save_and_go_back)
+        layout.add_widget(btn_back)
+
+        self.add_widget(layout)
+        self.current_note_widget = None
+
+    def open_note(self, note_widget):
+        self.current_note_widget = note_widget
+        if note_widget:
+            self.text_input.text = note_widget.label.text
+        else:
+            self.text_input.text = ""
+
+    def save_and_go_back(self, instance):
+        app = App.get_running_app()
+        if self.current_note_widget:
+            self.current_note_widget.label.text = self.text_input.text
+        else:
+            if self.text_input.text.strip():
+                new_note = Note(self.text_input.text)
+                main_layout = app.main_screen.layout
+                main_layout.remove_widget(app.main_screen.btn)
+                main_layout.add_widget(new_note)
+                main_layout.add_widget(app.main_screen.btn)
+
+        app.sm.current = 'main'
+
+
+class MainScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
         self.scroll = ScrollView(size_hint=(1, 1))
 
         self.layout = GridLayout(cols=1, spacing=10, padding=10, size_hint_y=None)
@@ -51,30 +84,35 @@ class NoteApp(App):
         self.layout.row_force_default = True
         self.layout.bind(minimum_height=self.layout.setter('height'))
         self.scroll.bind(width=self.recalculate)
-        self.btn = Button(text='+', size_hint=(1, None), size=(100, 100))
-
-        for _ in range(15):
-            self.layout.add_widget(Note('text'))
-            self.layout.add_widget(Note('text2'))
-
+        self.btn = Button(text='+', size_hint=(None, None), size=(100, 100))
+        self.add_widget(self.scroll)
+        Window.bind(on_resize=self.recalculate)
         self.btn.bind(on_press=self.on_press)
         self.layout.add_widget(self.btn)
         self.scroll.add_widget(self.layout)
 
-        return self.scroll
-
-    def recalculate(self, instance, width):
-        note_width = 100
-        spacing = 10
-        padding = 10
-
-        avaible_width = width - (padding * 2)
-        columns = (avaible_width + spacing) // (note_width + spacing)
+    def recalculate(self, instance, width, *args):
+        columns = width / 110
         self.layout.cols = max(1, int(columns))
 
     def on_press(self, instance):
-        print('Test')
+        app = App.get_running_app()
+        app.edit_screen.open_note(None)
+        app.sm.current = 'edit'
+
+
+class NoteApp(App):
+    def build(self):
+        self.sm = ScreenManager()
+
+        self.main_screen = MainScreen(name='main')
+        self.edit_screen = EditScreen(name='edit')
+
+        self.sm.add_widget(self.main_screen)
+        self.sm.add_widget(self.edit_screen)
+
+        return self.sm
 
 
 if __name__ == '__main__':
-    NoteApp().run()
+     NoteApp().run()
