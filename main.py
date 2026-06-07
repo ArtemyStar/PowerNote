@@ -11,21 +11,23 @@ from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
 
 
-class Note(Widget):
+class Note(BoxLayout):
     def __init__(self, text, **kwargs):
         super().__init__(**kwargs)
         self.size_hint = (None, None)
         self.size = (100, 100)
-        self.label = Label(text=text, size=self.size, color=(0, 0, 0, 1))
-        self.add_widget(self.label)
-        self.bind(pos=self.draw, size=self.draw)
 
-    def draw(self, *args):
-        self.canvas.clear()
-        with self.canvas:
-            Color(1, 1, 1, 1)
-            Rectangle(pos=self.pos, size=self.size)
-        self.label.pos = self.pos
+        with self.canvas.before:
+            Color(1, 1, 1, 1)  # Белый фон
+            self.bg_rect = Rectangle(pos=self.pos, size=self.size)
+
+        self.label = Label(text=text, color=(0, 0, 0, 1))
+        self.add_widget(self.label)
+        self.bind(pos=self.update_bg, size=self.update_bg)
+
+    def update_bg(self, *args):
+        self.bg_rect.pos = self.pos
+        self.bg_rect.size = self.size
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -33,7 +35,6 @@ class Note(Widget):
             app.edit_screen.open_note(self)
             app.sm.current = 'edit'
             return True
-
         return super().on_touch_down(touch)
 
 
