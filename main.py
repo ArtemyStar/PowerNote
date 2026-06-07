@@ -1,5 +1,4 @@
 from kivy.app import App
-from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
@@ -18,7 +17,7 @@ class Note(BoxLayout):
         self.size = (100, 100)
 
         with self.canvas.before:
-            Color(1, 1, 1, 1)  # Белый фон
+            Color(1, 1, 1, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)
 
         self.label = Label(text=text, color=(0, 0, 0, 1))
