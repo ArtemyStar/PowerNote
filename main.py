@@ -78,9 +78,14 @@ class EditScreen(Screen):
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
         self.text_input = TextInput(size_hint=(1, 0.9), font_size=16)
         layout.add_widget(self.text_input)
-        btn_back = Button(text='Save and exit', size_hint=(1, 0.1))
+        buttons_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.1))
+        btn_back = Button(text='Save and exit')
         btn_back.bind(on_press=self.save_and_go_back)
-        layout.add_widget(btn_back)
+        buttons_layout.add_widget(btn_back)
+        self.btn_delete = Button(text='Delete', background_color=(0.9, 0.3, 0.3, 1))
+        self.btn_delete.bind(on_press=self.delete_note)
+        buttons_layout.add_widget(self.btn_delete)
+        layout.add_widget(buttons_layout)
         self.add_widget(layout)
         self.current_note_widget = None
 
@@ -88,8 +93,10 @@ class EditScreen(Screen):
         self.current_note_widget = note_widget
         if note_widget:
             self.text_input.text = note_widget.label.text
+            self.btn_delete.disabled = False
         else:
             self.text_input.text = ""
+            self.btn_delete.disabled = True
 
     def save_and_go_back(self, instance):
         app = App.get_running_app()
@@ -106,6 +113,15 @@ class EditScreen(Screen):
                 main_layout.add_widget(app.main_screen.btn)
 
         app.save_all_notes()
+        self.current_note_widget = None
+        app.sm.current = 'main'
+
+    def delete_note(self, instance):
+        if self.current_note_widget:
+            app = App.get_running_app()
+            app.main_screen.layout.remove_widget(self.current_note_widget)
+            app.save_all_notes()
+
         self.current_note_widget = None
         app.sm.current = 'main'
 
